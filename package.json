@@ -1,0 +1,34 @@
+{
+  "name": "nerdsnipe-wtf",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"bun --hot src/server/index.ts\" \"bun build src/client/main.tsx --outdir public --target browser --watch\" \"./node_modules/.bin/tailwindcss -i src/client/styles.css -o public/bundle.css --watch\"",
+    "lint": "oxlint src/",
+    "format": "oxfmt src/",
+    "format:check": "oxfmt --check src/",
+    "build:client": "bun build src/client/main.tsx --outdir public --target browser --minify",
+    "build:css": "./node_modules/.bin/tailwindcss -i src/client/styles.css -o public/bundle.css --minify",
+    "build": "bun run build:client && bun run build:css",
+    "start": "bun src/server/index.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5",
+    "@tanstack/react-router": "^1",
+    "@tanstack/react-table": "^8",
+    "fast-xml-parser": "^4",
+    "hono": "^4",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.2.4",
+    "@types/bun": "latest",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "concurrently": "^9",
+    "oxfmt": "^0.46.0",
+    "oxlint": "^1.61.0",
+    "tailwindcss": "^4"
+  }
+}
