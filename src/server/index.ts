@@ -23,13 +23,17 @@ const port = Number(process.env.PORT ?? 3000);
 
 // kick off background tasks — don't await, server starts immediately
 (async () => {
-  await syncRss();
-  await subscribe();
+  try {
+    await syncRss();
+    await subscribe();
 
-  // re-sync RSS every 30 min
-  setInterval(syncRss, 30 * 60 * 1000);
-  // re-subscribe to WebSub every 9 days (subscriptions expire at 10)
-  setInterval(subscribe, 9 * 24 * 60 * 60 * 1000);
+    // re-sync RSS every 30 min
+    setInterval(syncRss, 30 * 60 * 1000);
+    // re-subscribe to WebSub every 9 days (subscriptions expire at 10)
+    setInterval(subscribe, 9 * 24 * 60 * 60 * 1000);
+  } catch (err) {
+    console.error("[startup] background task failed:", err);
+  }
 })();
 
 export default {

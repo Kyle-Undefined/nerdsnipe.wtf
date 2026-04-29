@@ -1,6 +1,10 @@
 import { join } from "path";
+import { mkdirSync } from "node:fs";
 
-const CACHE_PATH = join(import.meta.dir, "../../data/episodes.json");
+const DATA_DIR = join(import.meta.dir, "../../data");
+const CACHE_PATH = join(DATA_DIR, "episodes.json");
+
+mkdirSync(DATA_DIR, { recursive: true });
 
 export interface Episode {
   id: string;
@@ -24,8 +28,15 @@ export async function readCache(): Promise<Episode[]> {
   }
 }
 
+// serializes concurrent writes — prevents interleaved file corruption
+let writeLock: Promise<void> = Promise.resolve();
+
 export async function writeCache(episodes: Episode[]): Promise<void> {
-  await Bun.write(CACHE_PATH, JSON.stringify(episodes, null, 2));
+  writeLock = writeLock
+    .catch(() => {})
+    .then(() => Bun.write(CACHE_PATH, JSON.stringify(episodes, null, 2)))
+    .then(() => undefined);
+  return writeLock;
 }
 
 // merge incoming episodes with what we have — never deletes, always updates
@@ -43,18 +54,24 @@ export async function mergeEpisodes(incoming: Episode[]): Promise<Episode[]> {
     });
   }
 
-  const merged = Array.from(byId.values()).sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-  );
+  const merged = Array.from(byId.values()).sort((a, b) => {
+    const ta = new Date(a.date).getTime();
+    const tb = new Date(b.date).getTime();
+    if (isNaN(ta) && isNaN(tb)) return 0;
+    if (isNaN(ta)) return 1;
+    if (isNaN(tb)) return -1;
+    return tb - ta;
+  });
 
   await writeCache(merged);
   return merged;
 }
 
-export async function patchEpisodeYt(episodeId: string, ytUrl: string): Promise<void> {
+export async function patchEpisodeYt(episodeId: string, ytUrl: string): Promise<boolean> {
   const episodes = await readCache();
   const ep = episodes.find((e) => e.id === episodeId);
-  if (!ep) return;
+  if (!ep) return false;
   ep.ytUrl = ytUrl;
   await writeCache(episodes);
+  return true;
 }

@@ -44,12 +44,12 @@ function AudioPlayer({ audioUrl }: AudioPlayerProps) {
   function togglePlay() {
     const a = audioRef.current;
     if (!a) return;
-    if (playing) {
-      a.pause();
-    } else {
+    // state is driven by onPlay/onPause events — don't set it here
+    if (a.paused) {
       a.play().catch(() => {});
+    } else {
+      a.pause();
     }
-    setPlaying(!playing);
   }
 
   function seek(e: React.MouseEvent<HTMLDivElement>) {
@@ -91,8 +91,10 @@ function AudioPlayer({ audioUrl }: AudioPlayerProps) {
           setProgress(a.duration ? a.currentTime / a.duration : 0);
           setCurrentTime(fmtTime(a.currentTime));
         }}
-        onLoadedMetadata={(e) => setDuration(fmtTime(e.currentTarget.duration))}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
+        onLoadedMetadata={(e) => setDuration(fmtTime(e.currentTarget.duration))}
       />
 
       <div className="flex items-center gap-3">
@@ -205,9 +207,8 @@ export function EpisodeRow({ episode: ep, streamDelay, isOpen, onToggle }: Episo
       {/* collapsed row */}
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-3 px-2.5 py-2.5 cursor-pointer bg-transparent text-left hover:bg-zinc-900/30 transition-colors"
+        className="bg-transparent hover:bg-zinc-900/30 transition-colors"
         style={{
-          all: "unset",
           display: "flex",
           alignItems: "center",
           gap: 12,
@@ -215,6 +216,10 @@ export function EpisodeRow({ episode: ep, streamDelay, isOpen, onToggle }: Episo
           width: "100%",
           cursor: "pointer",
           boxSizing: "border-box",
+          border: "none",
+          font: "inherit",
+          color: "inherit",
+          textAlign: "left",
         }}
       >
         <span
@@ -256,7 +261,7 @@ export function EpisodeRow({ episode: ep, streamDelay, isOpen, onToggle }: Episo
               toggleVote({ episodeId: ep.id, baseline: ep.votes });
             }
           }}
-          className="font-mono text-[11px] px-2 py-0.5 w-[58px] flex-shrink-0 text-center transition-all cursor-pointer"
+          className="font-mono text-[11px] px-2 py-0.5 w-[52px] flex-shrink-0 text-center transition-all cursor-pointer"
           style={{
             color: voteState.voted ? "var(--accent)" : "#71717a",
             border: `1px solid ${voteState.voted ? "var(--accent)" : "#27272a"}`,
@@ -265,7 +270,7 @@ export function EpisodeRow({ episode: ep, streamDelay, isOpen, onToggle }: Episo
               : "transparent",
           }}
         >
-          {voteState.voted ? "★" : "☆"} {voteState.count}
+          {voteState.voted ? "wtf!" : "wtf?"} {voteState.count}
         </span>
       </button>
 

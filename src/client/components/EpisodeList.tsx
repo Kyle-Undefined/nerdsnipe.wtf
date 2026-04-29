@@ -7,10 +7,18 @@ type SortKey = "newest" | "starred" | "longest" | "shortest";
 
 const SORT_LABELS: Record<SortKey, string> = {
   newest: "newest",
-  starred: "most starred",
+  starred: "most wtf'd",
   longest: "longest",
   shortest: "shortest",
 };
+
+function durationToSecs(d: string): number {
+  const parts = d.split(":").map(Number);
+  if (parts.some(isNaN)) return 0;
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return parts[0] ?? 0;
+}
 
 function sortEpisodes(episodes: Episode[], sort: SortKey): Episode[] {
   const copy = [...episodes];
@@ -20,9 +28,9 @@ function sortEpisodes(episodes: Episode[], sort: SortKey): Episode[] {
     case "starred":
       return copy.sort((a, b) => b.votes - a.votes);
     case "longest":
-      return copy.sort((a, b) => b.duration.localeCompare(a.duration));
+      return copy.sort((a, b) => durationToSecs(b.duration) - durationToSecs(a.duration));
     case "shortest":
-      return copy.sort((a, b) => a.duration.localeCompare(b.duration));
+      return copy.sort((a, b) => durationToSecs(a.duration) - durationToSecs(b.duration));
   }
 }
 

@@ -1,5 +1,23 @@
 import { Hono } from "hono";
-import { handlePush } from "../websub";
+import { handlePush, WEBSUB_SECRET } from "../websub";
+
+async function verifySignature(body: string, sigHeader: string | undefined): Promise<boolean> {
+  if (!WEBSUB_SECRET) return true;
+  if (!sigHeader?.startsWith("sha256=")) return false;
+  const expected = sigHeader.slice(7);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(WEBSUB_SECRET),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
+  const hex = Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return hex === expected;
+}
 
 const webhook = new Hono();
 
@@ -13,6 +31,11 @@ webhook.get("/", (c) => {
 // YouTube push notification
 webhook.post("/", async (c) => {
   const body = await c.req.text();
+
+  if (!(await verifySignature(body, c.req.header("X-Hub-Signature-256")))) {
+    return c.text("invalid signature", 403);
+  }
+
   // fire and forget — hub doesn't care about our processing time
   handlePush(body).catch((err) => console.error("[webhook] push error:", err));
   return c.text("ok");

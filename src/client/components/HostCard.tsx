@@ -91,7 +91,7 @@ export const HOSTS = {
     handle: "@t3dotgg",
     site: "t3.gg",
     bio: "Software dev, AI nerd, TypeScript sympathizer. Creator of T3 Chat and the T3 Stack.",
-    avatar: "/public/assets/theo.jpg",
+    avatar: "/public/assets/theo.webp",
     typeColor: "#a78bd8",
   },
   ben: {
@@ -99,7 +99,7 @@ export const HOSTS = {
     handle: "@davis7",
     site: "davis7.sh",
     bio: "I do dev stuff and talk about whatever I'm currently nerd sniped by.",
-    avatar: "/public/assets/ben.png",
+    avatar: "/public/assets/ben.webp",
     typeColor: "#d4916a",
   },
 } satisfies Record<string, Host>;

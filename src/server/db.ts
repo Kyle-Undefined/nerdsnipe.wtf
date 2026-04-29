@@ -1,7 +1,11 @@
 import { Database } from "bun:sqlite";
 import { join } from "path";
+import { mkdirSync } from "node:fs";
 
-const DB_PATH = join(import.meta.dir, "../../data/nerdsnipe.db");
+const DATA_DIR = join(import.meta.dir, "../../data");
+const DB_PATH = join(DATA_DIR, "nerdsnipe.db");
+
+mkdirSync(DATA_DIR, { recursive: true });
 
 let _db: Database | null = null;
 
@@ -27,19 +31,29 @@ export interface VoteResult {
 export function toggleVote(episodeId: string, voterId: string): VoteResult {
   const db = getDb();
 
-  const insert = db.prepare("INSERT OR IGNORE INTO votes (episode_id, voter_uuid) VALUES (?, ?)");
-  const result = insert.run(episodeId, voterId);
+  db.run("BEGIN IMMEDIATE");
+  try {
+    const result = db
+      .prepare("INSERT OR IGNORE INTO votes (episode_id, voter_uuid) VALUES (?, ?)")
+      .run(episodeId, voterId);
 
-  // row already existed — remove it (toggle off)
-  if (result.changes === 0) {
-    db.prepare("DELETE FROM votes WHERE episode_id = ? AND voter_uuid = ?").run(episodeId, voterId);
+    if (result.changes === 0) {
+      db.prepare("DELETE FROM votes WHERE episode_id = ? AND voter_uuid = ?").run(
+        episodeId,
+        voterId,
+      );
+    }
+
+    const { count } = db
+      .prepare("SELECT COUNT(*) as count FROM votes WHERE episode_id = ?")
+      .get(episodeId) as { count: number };
+
+    db.run("COMMIT");
+    return { voted: result.changes > 0, count };
+  } catch (err) {
+    db.run("ROLLBACK");
+    throw err;
   }
-
-  const { count } = db
-    .prepare("SELECT COUNT(*) as count FROM votes WHERE episode_id = ?")
-    .get(episodeId) as { count: number };
-
-  return { voted: result.changes > 0, count };
 }
 
 export function getVoteCounts(): Record<string, number> {

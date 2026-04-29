@@ -44,7 +44,8 @@ export async function fetchRss(): Promise<Episode[]> {
       const audioUrl = enclosure?.["@_url"] ?? "";
 
       // pubDate from RSS is like "Tue, 22 Apr 2026 12:00:00 +0000"
-      const pubDate = i.pubDate ? new Date(String(i.pubDate)) : new Date(0);
+      const pubDate = i.pubDate ? new Date(String(i.pubDate)) : null;
+      if (!pubDate || isNaN(pubDate.getTime())) return null;
       const date = pubDate.toISOString().slice(0, 10);
 
       const raw = i["itunes:duration"];
@@ -87,6 +88,7 @@ export async function enrichWithApple(episodes: Episode[]): Promise<Episode[]> {
       });
       if (!match) return ep;
       const trackId = match.trackId;
+      if (trackId == null) return ep;
       return {
         ...ep,
         appleUrl: `https://podcasts.apple.com/us/podcast/id1892197141?i=${trackId}`,

@@ -7,7 +7,7 @@
     "lint": "oxlint src/",
     "format": "oxfmt src/",
     "format:check": "oxfmt --check src/",
-    "build:client": "bun build src/client/main.tsx --outdir public --target browser --minify",
+    "build:client": "NODE_ENV=production bun build src/client/main.tsx --outdir public --target browser --minify",
     "build:css": "./node_modules/.bin/tailwindcss -i src/client/styles.css -o public/bundle.css --minify",
     "build": "bun run build:client && bun run build:css",
     "start": "bun src/server/index.ts"

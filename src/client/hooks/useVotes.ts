@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 const VOTER_KEY = "nerdsnipe:voter";
 
 export function getVoterId(): string {
+  if (typeof window === "undefined") return "";
   let id = localStorage.getItem(VOTER_KEY);
   if (!id) {
     id = crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2);

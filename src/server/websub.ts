@@ -8,6 +8,9 @@ const TOPIC_URL = `https://www.youtube.com/feeds/videos.xml?channel_id=${YT_CHAN
 // base URL where our webhook lives — set via env in production
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000";
 
+// shared with webhook.ts for push signature verification
+export const WEBSUB_SECRET = process.env.WEBSUB_SECRET ?? "";
+
 export async function subscribe(): Promise<void> {
   const body = new URLSearchParams({
     "hub.callback": `${BASE_URL}/webhook`,
@@ -15,6 +18,8 @@ export async function subscribe(): Promise<void> {
     "hub.mode": "subscribe",
     "hub.lease_seconds": String(9 * 24 * 60 * 60), // 9 days
   });
+
+  if (WEBSUB_SECRET) body.set("hub.secret", WEBSUB_SECRET);
 
   try {
     const res = await fetch(HUB_URL, {

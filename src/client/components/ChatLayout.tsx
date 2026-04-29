@@ -5,11 +5,11 @@ import { useIntro } from "../hooks/useIntro";
 import type { Episode } from "./EpisodeRow";
 
 const RECENT_QUERIES = [
-  "list all episodes",
-  "what's ben mad about this week",
-  "rank typescript features",
-  "self hosting tier list",
-  "top 10 by stars",
+  "show me all episodes",
+  "what's theo's rant this week?",
+  "what's ben working on?",
+  "why doesn't theo use obsidian?",
+  "most wtf'd episodes",
 ];
 
 function fmtDate(iso: string): string {
@@ -25,7 +25,11 @@ export function ChatLayout() {
 
   const { data: episodes = [], isLoading } = useQuery<Episode[]>({
     queryKey: ["episodes"],
-    queryFn: () => fetch("/api/episodes").then((r) => r.json()),
+    queryFn: async () => {
+      const r = await fetch("/api/episodes");
+      if (!r.ok) throw new Error(`episodes fetch failed: ${r.status}`);
+      return r.json() as Promise<Episode[]>;
+    },
     staleTime: 60_000,
   });
 
@@ -44,10 +48,10 @@ export function ChatLayout() {
         {/* logo */}
         <div className="flex items-center gap-2.5 px-2 pb-4">
           <div
-            className="w-[22px] h-[22px] flex items-center justify-center font-mono font-bold text-[13px]"
+            className="w-[28px] h-[22px] flex items-center justify-center font-mono font-bold text-[10px]"
             style={{ background: "var(--accent)", color: "#0a0a0b" }}
           >
-            N
+            NS
           </div>
           <span className="font-mono text-sm tracking-tight text-zinc-200">nerdsnipe.wtf</span>
         </div>
@@ -79,7 +83,7 @@ export function ChatLayout() {
 
         {/* model badge */}
         <div className="mt-auto flex gap-2 px-1 py-2 font-mono text-[10px] text-zinc-600">
-          <span>model: ns-4.0</span>
+          <span>model: wtf-420.69</span>
           <span className="ml-auto">v0.1</span>
         </div>
       </aside>
@@ -92,9 +96,11 @@ export function ChatLayout() {
           <div className="ml-auto flex gap-2">
             <a
               href="https://anchor.fm/s/1112097e0/podcast/rss"
+              target="_blank"
+              rel="noopener noreferrer"
               className="font-mono text-[11px] text-zinc-400 px-2 py-1 border border-zinc-800 no-underline hover:border-zinc-600 transition-colors"
             >
-              rss
+              rss ↗
             </a>
             <a
               href="https://open.spotify.com/show/nerd-sniped"
@@ -116,8 +122,7 @@ export function ChatLayout() {
               href="https://www.youtube.com/channel/UC2mPtIOYm1XihpmfrJKXjMw"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-[11px] font-semibold px-2.5 py-1 no-underline hover:opacity-90 transition-opacity"
-              style={{ color: "#0a0a0b", background: "var(--accent)" }}
+              className="font-mono text-[11px] text-zinc-400 px-2 py-1 border border-zinc-800 no-underline hover:border-zinc-600 transition-colors"
             >
               youtube ↗
             </a>
@@ -137,7 +142,7 @@ export function ChatLayout() {
               className="font-mono text-[10px] uppercase tracking-widest mb-2.5"
               style={{ color: "var(--accent)" }}
             >
-              conversation started · {fmtDate(new Date().toISOString())}
+              conversation started · {episodes.at(-1)?.date ? fmtDate(episodes.at(-1)!.date) : "…"}
             </div>
             <h1 className="text-[32px] font-semibold tracking-tight leading-tight mb-2.5">
               Real talk from (mostly) real devs.
@@ -164,14 +169,7 @@ export function ChatLayout() {
                   borderTopRightRadius: 4,
                 }}
               >
-                {typing ? (
-                  <span className="text-zinc-400 font-mono">
-                    show me the newest episodes
-                    <span className="animate-blink ml-0.5">▍</span>
-                  </span>
-                ) : (
-                  "show me the newest episodes"
-                )}
+                show me all episodes
               </div>
             </div>
           </div>
@@ -181,10 +179,10 @@ export function ChatLayout() {
             <div className="flex gap-3.5 py-4">
               {/* N badge */}
               <div
-                className="w-7 h-7 flex-shrink-0 flex items-center justify-center font-mono text-xs font-bold"
+                className="w-8 h-7 flex-shrink-0 flex items-center justify-center font-mono text-[10px] font-bold"
                 style={{ background: "var(--accent)", color: "#0a0a0b" }}
               >
-                N
+                NS
               </div>
 
               <div className="flex-1 min-w-0">
@@ -206,8 +204,7 @@ export function ChatLayout() {
                         <p className="text-sm leading-relaxed text-zinc-300 mb-3.5">
                           Here are all <strong>{episodes.length}</strong> episodes, newest first.
                           Click a row to expand, or{" "}
-                          <strong style={{ color: "var(--accent)" }}>☆</strong> to upvote. Votes are
-                          anonymous.
+                          <strong style={{ color: "var(--accent)" }}>wtf?</strong> to upvote.
                         </p>
                         <EpisodeList
                           episodes={episodes}
@@ -232,7 +229,7 @@ export function ChatLayout() {
             nerdsnipe.wtf may hallucinate takes. verify with source material.
           </p>
           <p className="font-mono text-[10px] text-zinc-700 mt-1">
-            vibed:{" "}
+            vibed by:{" "}
             <a
               href="https://kyleundefined.dev"
               target="_blank"

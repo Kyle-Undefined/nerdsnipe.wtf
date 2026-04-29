@@ -1,4 +1,8 @@
 node_modules/
 public/main.js
 public/bundle.css
+src/**/*.js
 data/
+.env
+.env.*
+*.env
