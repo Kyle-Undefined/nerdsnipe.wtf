@@ -42,7 +42,7 @@ export function ChatLayout() {
     >
       {/* sidebar */}
       <aside
-        className="w-60 border-r border-zinc-900 flex flex-col gap-1 flex-shrink-0"
+        className="w-60 border-r border-zinc-900 flex flex-col gap-1 flex-shrink-0 sticky top-0 h-screen overflow-y-auto"
         style={{ background: "#0a0a0b", padding: "20px 14px" }}
       >
         {/* logo */}
@@ -203,8 +203,8 @@ export function ChatLayout() {
                       <>
                         <p className="text-sm leading-relaxed text-zinc-300 mb-3.5">
                           Here are all <strong>{episodes.length}</strong> episodes, newest first.
-                          Click a row to expand, or{" "}
-                          <strong style={{ color: "var(--accent)" }}>wtf?</strong> to upvote.
+                          Click a row to expand, or hit{" "}
+                          <strong style={{ color: "var(--accent)" }}>wtf?</strong> if it sniped you.
                         </p>
                         <EpisodeList
                           episodes={episodes}
@@ -220,9 +220,9 @@ export function ChatLayout() {
           )}
         </div>
 
-        {/* sticky footer bar */}
+        {/* footer bar */}
         <div
-          className="sticky bottom-0 px-8 pb-6 pt-4 text-center"
+          className="px-8 pb-6 pt-4 text-center"
           style={{ background: "linear-gradient(180deg, transparent, #09090b 40%)" }}
         >
           <p className="font-mono text-[10px] text-zinc-700">

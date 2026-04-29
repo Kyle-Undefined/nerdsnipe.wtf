@@ -29,7 +29,10 @@ export async function fetchRss(): Promise<Episode[]> {
 
   const xml = await res.text();
   const data = parser.parse(xml);
-  const items: unknown[] = data?.rss?.channel?.item ?? [];
+  const channel = data?.rss?.channel ?? {};
+  const channelImage =
+    (channel as Record<string, unknown>)?.["itunes:image"]?.["@_href"] ?? undefined;
+  const items: unknown[] = channel?.item ?? [];
 
   return items
     .map((item: unknown): Episode | null => {
@@ -53,11 +56,24 @@ export async function fetchRss(): Promise<Episode[]> {
         typeof raw === "string" || typeof raw === "number" ? raw : undefined,
       );
 
-      // strip HTML from description
-      const desc = String((i["content:encoded"] as string) ?? i.description ?? "").replace(
-        /<[^>]+>/g,
-        "",
-      );
+      const raw_desc = String((i["content:encoded"] as string) ?? i.description ?? "");
+      const desc = raw_desc
+        .replace(/<\/p>/gi, "\n\n")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<\/li>/gi, "\n")
+        .replace(/<[^>]+>/g, "")
+        .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+        .replace(/&nbsp;/g, " ")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+
+      const itunesImage = i["itunes:image"] as Record<string, string> | undefined;
+      const imageUrl = itunesImage?.["@_href"] ?? channelImage;
 
       return {
         id: String(guid),
@@ -65,8 +81,9 @@ export async function fetchRss(): Promise<Episode[]> {
         title: String(i.title ?? ""),
         date,
         duration,
-        description: desc.slice(0, 800),
+        description: desc.slice(0, 1200),
         audioUrl,
+        imageUrl,
       };
     })
     .filter((e): e is Episode => e !== null && e.title !== "");

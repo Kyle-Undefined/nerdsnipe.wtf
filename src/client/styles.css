@@ -58,6 +58,16 @@
   animation: dot 1.2s 0.4s infinite;
 }
 
+.pod-link {
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.pod-link:hover {
+  border-color: var(--accent) !important;
+  background: color-mix(in srgb, var(--accent) 15%, transparent) !important;
+}
+
 /* scrollbar styling — the default webkit scrollbar looks rough in dark mode */
 ::-webkit-scrollbar {
   width: 6px;

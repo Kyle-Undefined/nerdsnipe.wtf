@@ -9,6 +9,7 @@ export interface Episode {
   duration: string;
   description: string;
   audioUrl: string;
+  imageUrl?: string;
   ytUrl?: string;
   appleUrl?: string;
   votes: number;
@@ -66,12 +67,11 @@ function AudioPlayer({ audioUrl }: AudioPlayerProps) {
     a.currentTime = Math.max(0, a.currentTime + secs);
   }
 
-  function cycleSpeed() {
+  function changeSpeed(val: number) {
     const a = audioRef.current;
     if (!a) return;
-    const next = speed >= 2 ? 1 : speed + 0.25;
-    a.playbackRate = next;
-    setSpeed(next);
+    a.playbackRate = val;
+    setSpeed(val);
   }
 
   return (
@@ -144,12 +144,23 @@ function AudioPlayer({ audioUrl }: AudioPlayerProps) {
           </div>
         </div>
 
-        <button
-          onClick={cycleSpeed}
-          className="font-mono text-[10px] text-zinc-400 px-2 py-1 border border-zinc-800 cursor-pointer bg-transparent hover:border-zinc-600"
-        >
-          {speed}×
-        </button>
+        <div className="flex gap-0.5">
+          {[1, 1.25, 1.5, 1.75, 2].map((s) => (
+            <button
+              key={s}
+              onClick={() => changeSpeed(s)}
+              className="font-mono text-[9px] px-1.5 py-0.5 cursor-pointer border transition-colors"
+              style={{
+                color: speed === s ? "var(--accent)" : "#71717a",
+                border: `1px solid ${speed === s ? "var(--accent)" : "#27272a"}`,
+                background:
+                  speed === s ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent",
+              }}
+            >
+              {s}×
+            </button>
+          ))}
+        </div>
       </div>
 
       {playing && (
@@ -277,22 +288,19 @@ export function EpisodeRow({ episode: ep, streamDelay, isOpen, onToggle }: Episo
       {/* expanded panel */}
       {isOpen && (
         <div className="px-9 pb-5 pt-1 flex gap-4" style={{ background: "#0b0b0d" }}>
-          {/* art placeholder */}
+          {/* episode art */}
           <div
-            className="w-[180px] h-[180px] flex-shrink-0 relative overflow-hidden border border-zinc-800"
+            className="w-[180px] h-[180px] flex-shrink-0 overflow-hidden border border-zinc-800"
             style={{ background: "#050507" }}
           >
-            <div
-              className="absolute inset-0"
-              style={{
-                background: "repeating-linear-gradient(45deg, #0a0a0e 0 8px, #101018 8px 16px)",
-              }}
-            />
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 font-mono text-[9px] text-zinc-600 text-center p-2">
-              <div className="text-2xl text-zinc-700">◾</div>
-              <div>rss feed image</div>
-              <div className="text-zinc-700">{ep.num}</div>
-            </div>
+            {ep.imageUrl ? (
+              <img src={ep.imageUrl} alt={ep.title} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 font-mono text-[9px] text-zinc-600 text-center p-2">
+                <div className="text-2xl text-zinc-700">◾</div>
+                <div className="text-zinc-700">{ep.num}</div>
+              </div>
+            )}
           </div>
 
           <div className="flex-1 min-w-0">
@@ -309,10 +317,23 @@ export function EpisodeRow({ episode: ep, streamDelay, isOpen, onToggle }: Episo
               {ep.title}
             </h3>
 
-            <p className="text-sm text-zinc-400 leading-relaxed mb-3.5">
-              {ep.description ||
-                `Ben and Theo get into it on "${ep.title.toLowerCase()}". Description will pull from the RSS feed once wired up.`}
-            </p>
+            <div className="text-sm text-zinc-400 leading-relaxed mb-3.5 flex flex-col gap-2">
+              {(
+                ep.description ||
+                `Ben and Theo get into it on "${ep.title.toLowerCase()}". Description will pull from the RSS feed once wired up.`
+              )
+                .split("\n\n")
+                .map((para, i) => (
+                  <p key={i}>
+                    {para.split("\n").map((line, j, arr) => (
+                      <span key={j}>
+                        {line}
+                        {j < arr.length - 1 && <br />}
+                      </span>
+                    ))}
+                  </p>
+                ))}
+            </div>
 
             {/* listen links */}
             <div className="flex gap-2 items-center flex-wrap">
@@ -325,7 +346,7 @@ export function EpisodeRow({ episode: ep, streamDelay, isOpen, onToggle }: Episo
                   href={p.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-mono text-[11px] px-2.5 py-1 no-underline tracking-wide"
+                  className="pod-link font-mono text-[11px] px-2.5 py-1 no-underline tracking-wide"
                   style={{
                     color: "var(--accent)",
                     border: "1px solid color-mix(in srgb, var(--accent) 25%, transparent)",

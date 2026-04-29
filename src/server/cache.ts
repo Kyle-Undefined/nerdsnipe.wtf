@@ -14,6 +14,7 @@ export interface Episode {
   duration: string;
   description: string;
   audioUrl: string;
+  imageUrl?: string;
   ytUrl?: string;
   appleUrl?: string;
 }
@@ -49,6 +50,7 @@ export async function mergeEpisodes(incoming: Episode[]): Promise<Episode[]> {
     // preserve ytUrl and appleUrl that came from other sources
     byId.set(ep.id, {
       ...ep,
+      imageUrl: ep.imageUrl ?? prev?.imageUrl,
       ytUrl: ep.ytUrl ?? prev?.ytUrl,
       appleUrl: ep.appleUrl ?? prev?.appleUrl,
     });
