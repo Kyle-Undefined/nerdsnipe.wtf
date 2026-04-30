@@ -1,0 +1,14 @@
+.env
+.env.*
+*.env
+.git
+.gitignore
+.github
+.claude
+data/
+node_modules/
+public/main.js
+public/bundle.css
+*.md
+Dockerfile
+.dockerignore

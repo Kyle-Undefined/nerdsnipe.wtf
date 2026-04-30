@@ -13,6 +13,7 @@ export interface Episode {
   ytUrl?: string;
   appleUrl?: string;
   votes: number;
+  voted?: boolean;
 }
 
 function fmtDate(iso: string): string {
@@ -189,7 +190,7 @@ interface EpisodeRowProps {
 export function EpisodeRow({ episode: ep, streamDelay, isOpen, onToggle }: EpisodeRowProps) {
   const [revealed, setRevealed] = useState(streamDelay === 0);
   const { mutate: toggleVote } = useVoteToggle();
-  const voteState = getLocalVote(ep.id, ep.votes);
+  const voteState = getLocalVote(ep.id, ep.votes, ep.voted ?? false);
 
   useEffect(() => {
     if (streamDelay === 0) {
@@ -202,7 +203,7 @@ export function EpisodeRow({ episode: ep, streamDelay, isOpen, onToggle }: Episo
 
   const podLinks = [
     ep.ytUrl && { label: "youtube", href: ep.ytUrl },
-    { label: "spotify", href: "https://open.spotify.com/show/nerd-sniped" },
+    { label: "spotify", href: "https://creators.spotify.com/pod/profile/nerd-sniped/" },
     ep.appleUrl && { label: "apple", href: ep.appleUrl },
   ].filter(Boolean) as Array<{ label: string; href: string }>;
 

@@ -1,11 +1,12 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
+import { secureHeaders } from "hono/secure-headers";
 import api from "./routes/api";
-import webhook from "./routes/webhook";
 import { syncRss } from "./rss";
-import { subscribe } from "./websub";
 
 const app = new Hono();
+
+app.use("*", secureHeaders());
 
 // static assets (built client bundle, images)
 app.use("/public/*", serveStatic({ root: "./" }));
@@ -13,28 +14,26 @@ app.use("/public/*", serveStatic({ root: "./" }));
 // API
 app.route("/api", api);
 
-// WebSub webhook
-app.route("/webhook", webhook);
-
-// everything else gets the SPA shell
-app.get("*", serveStatic({ path: "./index.html" }));
+// SPA shell — but never swallow /api/* misses, so unmatched API routes 404
+const spaShell = serveStatic({ path: "./index.html" });
+app.get("*", async (c, next) => {
+  if (c.req.path.startsWith("/api")) return c.notFound();
+  return spaShell(c, next);
+});
 
 const port = Number(process.env.PORT ?? 3000);
 
-// kick off background tasks — don't await, server starts immediately
-(async () => {
-  try {
-    await syncRss();
-    await subscribe();
+// kick off background tasks — don't await, server starts immediately.
+// register the interval before the initial run so a startup failure doesn't
+// prevent future syncs from happening.
+setInterval(
+  () => {
+    syncRss().catch((err) => console.error("[sync] interval run failed:", err));
+  },
+  60 * 60 * 1000,
+);
 
-    // re-sync RSS every 30 min
-    setInterval(syncRss, 30 * 60 * 1000);
-    // re-subscribe to WebSub every 9 days (subscriptions expire at 10)
-    setInterval(subscribe, 9 * 24 * 60 * 60 * 1000);
-  } catch (err) {
-    console.error("[startup] background task failed:", err);
-  }
-})();
+syncRss().catch((err) => console.error("[startup] initial sync failed:", err));
 
 export default {
   port,

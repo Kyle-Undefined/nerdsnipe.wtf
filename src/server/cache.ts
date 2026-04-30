@@ -68,12 +68,3 @@ export async function mergeEpisodes(incoming: Episode[]): Promise<Episode[]> {
   await writeCache(merged);
   return merged;
 }
-
-export async function patchEpisodeYt(episodeId: string, ytUrl: string): Promise<boolean> {
-  const episodes = await readCache();
-  const ep = episodes.find((e) => e.id === episodeId);
-  if (!ep) return false;
-  ep.ytUrl = ytUrl;
-  await writeCache(episodes);
-  return true;
-}

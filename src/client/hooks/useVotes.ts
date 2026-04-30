@@ -1,47 +1,25 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { computePow } from "../lib/pow";
 
-const VOTER_KEY = "nerdsnipe:voter";
-
-export function getVoterId(): string {
-  if (typeof window === "undefined") return "";
-  let id = localStorage.getItem(VOTER_KEY);
-  if (!id) {
-    id = crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2);
-    localStorage.setItem(VOTER_KEY, id);
-  }
-  return id;
-}
-
-export interface EpisodeWithVotes {
-  id: string;
-  votes: number;
-  [key: string]: unknown;
-}
-
-// local vote state lives here so the star updates instantly, even before the server responds
+// optimistic vote state lives here so the star updates instantly, even before the server responds
 const localVotes = new Map<string, { count: number; voted: boolean }>();
 
-export function getLocalVote(episodeId: string, baseline: number) {
-  return localVotes.get(episodeId) ?? { count: baseline, voted: false };
+export function getLocalVote(episodeId: string, baseline: number, votedBaseline = false) {
+  return localVotes.get(episodeId) ?? { count: baseline, voted: votedBaseline };
 }
 
 export function useVoteToggle() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      episodeId,
-      baseline: _baseline,
-    }: {
-      episodeId: string;
-      baseline: number;
-    }) => {
-      const voterId = getVoterId();
+    mutationFn: async ({ episodeId }: { episodeId: string; baseline: number }) => {
+      const proof = await computePow(episodeId);
 
       const res = await fetch(`/api/votes/${episodeId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ voterId }),
+        credentials: "same-origin",
+        body: JSON.stringify(proof),
       });
 
       if (!res.ok) throw new Error("vote failed");
@@ -69,6 +47,7 @@ export function useVoteToggle() {
       if (context?.previous) {
         localVotes.set(episodeId, context.previous);
       }
+      queryClient.invalidateQueries({ queryKey: ["episodes"] });
     },
   });
 }

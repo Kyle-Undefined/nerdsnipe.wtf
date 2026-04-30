@@ -26,7 +26,7 @@ export function ChatLayout() {
   const { data: episodes = [], isLoading } = useQuery<Episode[]>({
     queryKey: ["episodes"],
     queryFn: async () => {
-      const r = await fetch("/api/episodes");
+      const r = await fetch("/api/episodes", { credentials: "same-origin" });
       if (!r.ok) throw new Error(`episodes fetch failed: ${r.status}`);
       return r.json() as Promise<Episode[]>;
     },
@@ -83,8 +83,8 @@ export function ChatLayout() {
 
         {/* model badge */}
         <div className="mt-auto flex gap-2 px-1 py-2 font-mono text-[10px] text-zinc-600">
-          <span>model: wtf-420.69</span>
-          <span className="ml-auto">v0.1</span>
+          <span>model: wtf-l337</span>
+          <span className="ml-auto">v4.20.69</span>
         </div>
       </aside>
 
@@ -103,7 +103,7 @@ export function ChatLayout() {
               rss ↗
             </a>
             <a
-              href="https://open.spotify.com/show/nerd-sniped"
+              href="https://creators.spotify.com/pod/profile/nerd-sniped/"
               target="_blank"
               rel="noopener noreferrer"
               className="font-mono text-[11px] text-zinc-400 px-2 py-1 border border-zinc-800 no-underline hover:border-zinc-600 transition-colors"
@@ -226,7 +226,8 @@ export function ChatLayout() {
           style={{ background: "linear-gradient(180deg, transparent, #09090b 40%)" }}
         >
           <p className="font-mono text-[10px] text-zinc-700">
-            nerdsnipe.wtf may hallucinate takes. verify with source material.
+            nerdsnipe.wtf may hallucinate takes. verify with source material. fan site, not
+            affiliated.
           </p>
           <p className="font-mono text-[10px] text-zinc-700 mt-1">
             vibed by:{" "}
@@ -238,6 +239,17 @@ export function ChatLayout() {
               style={{ color: "#52525b" }}
             >
               kyleundefined.dev
+            </a>
+            {" | "}
+            source:{" "}
+            <a
+              href="https://github.com/Kyle-Undefined/nerdsnipe.wtf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="no-underline border-b border-dotted border-zinc-800"
+              style={{ color: "#52525b" }}
+            >
+              github
             </a>
           </p>
         </div>
