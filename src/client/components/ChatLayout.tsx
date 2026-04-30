@@ -52,7 +52,7 @@ export function ChatLayout() {
         {/* logo */}
         <div className="flex items-center gap-2.5 px-2 pb-4">
           <div
-            className="w-[28px] h-[22px] flex items-center justify-center font-mono font-bold text-[10px]"
+            className="w-8 h-7 flex items-center justify-center font-mono font-bold text-[10px]"
             style={{ background: "var(--accent)", color: "#0a0a0b" }}
           >
             NS
@@ -202,21 +202,15 @@ export function ChatLayout() {
                 ) : isLoading ? (
                   <p className="text-sm text-zinc-400">Fetching episodes…</p>
                 ) : isError ? (
-                  <p className="text-sm text-red-400">
-                    Failed to load episodes. Try refreshing.
-                  </p>
+                  <p className="text-sm text-red-400">Failed to load episodes. Try refreshing.</p>
                 ) : (
                   <>
                     <p className="text-sm leading-relaxed text-zinc-300 mb-3.5">
-                      Here are all <strong>{episodes.length}</strong> episodes, newest first.
-                      Click a row to expand, or hit{" "}
+                      Here are all <strong>{episodes.length}</strong> episodes, newest first. Click
+                      a row to expand, or hit{" "}
                       <strong style={{ color: "var(--accent)" }}>wtf?</strong> if it sniped you.
                     </p>
-                    <EpisodeList
-                      episodes={episodes}
-                      skipIntroDelay={skipDelay}
-                      onReplay={replay}
-                    />
+                    <EpisodeList episodes={episodes} skipIntroDelay={skipDelay} onReplay={replay} />
                   </>
                 )}
               </div>
@@ -238,7 +232,7 @@ export function ChatLayout() {
             <a
               href="https://kyleundefined.dev"
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener"
               className="no-underline border-b border-dotted border-zinc-800"
               style={{ color: "#52525b" }}
             >

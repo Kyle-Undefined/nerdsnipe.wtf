@@ -16,6 +16,34 @@ export interface Episode {
   voted?: boolean;
 }
 
+const URL_RE = /(https?:\/\/[^\s)<>\]]+|(?:^|\s)nerdsnipe\.link\/[^\s)<>\]]+)/g;
+
+function linkify(text: string): React.ReactNode[] {
+  const parts = text.split(URL_RE);
+  return parts.map((part, i) => {
+    if (!part) return null;
+    const trimmed = part.trim();
+    const isUrl = /^https?:\/\//.test(trimmed) || trimmed.startsWith("nerdsnipe.link/");
+    if (!isUrl) return <span key={i}>{part}</span>;
+    const leading = part.startsWith(" ") ? " " : "";
+    const href = /^https?:\/\//.test(trimmed) ? trimmed : `https://${trimmed}`;
+    return (
+      <span key={i}>
+        {leading}
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener"
+          className="no-underline hover:brightness-110"
+          style={{ color: "var(--accent)" }}
+        >
+          {trimmed}
+        </a>
+      </span>
+    );
+  });
+}
+
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
     month: "short",
@@ -28,13 +56,17 @@ interface AudioPlayerProps {
   audioUrl: string;
 }
 
+const SPEEDS = [1, 1.25, 1.5, 1.75, 2] as const;
+
 function AudioPlayer({ audioUrl }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0); // 0–1
   const [currentTime, setCurrentTime] = useState("0:00:00");
   const [duration, setDuration] = useState("0:00:00");
-  const [speed, setSpeed] = useState(1);
+  const [speedIdx, setSpeedIdx] = useState(0);
+  const [volume, setVolume] = useState(1); // 0–1
+  const [muted, setMuted] = useState(false);
 
   function fmtTime(secs: number): string {
     const h = Math.floor(secs / 3600);
@@ -54,12 +86,43 @@ function AudioPlayer({ audioUrl }: AudioPlayerProps) {
     }
   }
 
-  function seek(e: React.MouseEvent<HTMLDivElement>) {
+  function pctFromPointer(el: HTMLElement, clientX: number): number {
+    const rect = el.getBoundingClientRect();
+    return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  }
+
+  function seekTo(pct: number) {
     const a = audioRef.current;
     if (!a || !a.duration) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pct = (e.clientX - rect.left) / rect.width;
     a.currentTime = pct * a.duration;
+  }
+
+  function startScrub(e: React.PointerEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    el.setPointerCapture(e.pointerId);
+    seekTo(pctFromPointer(el, e.clientX));
+  }
+
+  function moveScrub(e: React.PointerEvent<HTMLDivElement>) {
+    if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+    seekTo(pctFromPointer(e.currentTarget, e.clientX));
+  }
+
+  function endScrub(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  }
+
+  function startVol(e: React.PointerEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    el.setPointerCapture(e.pointerId);
+    changeVolume(pctFromPointer(el, e.clientX));
+  }
+
+  function moveVol(e: React.PointerEvent<HTMLDivElement>) {
+    if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
+    changeVolume(pctFromPointer(e.currentTarget, e.clientX));
   }
 
   function skip(secs: number) {
@@ -68,12 +131,32 @@ function AudioPlayer({ audioUrl }: AudioPlayerProps) {
     a.currentTime = Math.max(0, a.currentTime + secs);
   }
 
-  function changeSpeed(val: number) {
+  function cycleSpeed(dir: 1 | -1) {
+    const next = (speedIdx + dir + SPEEDS.length) % SPEEDS.length;
     const a = audioRef.current;
-    if (!a) return;
-    a.playbackRate = val;
-    setSpeed(val);
+    if (a) a.playbackRate = SPEEDS[next];
+    setSpeedIdx(next);
   }
+
+  function changeVolume(v: number) {
+    const clamped = Math.max(0, Math.min(1, v));
+    const a = audioRef.current;
+    if (a) {
+      a.volume = clamped;
+      a.muted = false;
+    }
+    setVolume(clamped);
+    setMuted(false);
+  }
+
+  function toggleMute() {
+    const a = audioRef.current;
+    const next = !muted;
+    if (a) a.muted = next;
+    setMuted(next);
+  }
+
+  const displayVolume = muted ? 0 : volume;
 
   return (
     <div
@@ -109,7 +192,7 @@ function AudioPlayer({ audioUrl }: AudioPlayerProps) {
 
         <button
           onClick={togglePlay}
-          className="w-10 h-10 flex items-center justify-center text-[15px] font-bold cursor-pointer rounded-full"
+          className="w-10 h-10 flex items-center justify-center text-[15px] font-bold cursor-pointer rounded-full transition-[filter] hover:brightness-110"
           style={{ background: "var(--accent)", color: "#0a0a0b", paddingLeft: playing ? 0 : 2 }}
         >
           {playing ? "❚❚" : "▶"}
@@ -125,7 +208,13 @@ function AudioPlayer({ audioUrl }: AudioPlayerProps) {
 
         {/* progress bar */}
         <div className="flex-1 flex flex-col gap-1.5">
-          <div className="h-1 bg-zinc-800 relative cursor-pointer" onClick={seek}>
+          <div
+            className="h-1 bg-zinc-800 relative cursor-pointer touch-none select-none"
+            onPointerDown={startScrub}
+            onPointerMove={moveScrub}
+            onPointerUp={endScrub}
+            onPointerCancel={endScrub}
+          >
             <div
               className="absolute left-0 top-0 bottom-0"
               style={{ width: `${progress * 100}%`, background: "var(--accent)" }}
@@ -145,22 +234,88 @@ function AudioPlayer({ audioUrl }: AudioPlayerProps) {
           </div>
         </div>
 
-        <div className="flex gap-0.5">
-          {[1, 1.25, 1.5, 1.75, 2].map((s) => (
-            <button
-              key={s}
-              onClick={() => changeSpeed(s)}
-              className="font-mono text-[9px] px-1.5 py-0.5 cursor-pointer border transition-colors"
-              style={{
-                color: speed === s ? "var(--accent)" : "#71717a",
-                border: `1px solid ${speed === s ? "var(--accent)" : "#27272a"}`,
-                background:
-                  speed === s ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent",
-              }}
+        {/* speed cycle */}
+        <div className="flex items-center">
+          <button
+            onClick={() => cycleSpeed(-1)}
+            className="font-mono text-[10px] w-5 h-6 flex items-center justify-center cursor-pointer text-zinc-500 hover:text-zinc-300 border border-zinc-800 border-r-0 bg-transparent"
+            title="slower"
+          >
+            ‹
+          </button>
+          <div
+            className="font-mono text-[9px] h-6 px-1.5 flex items-center justify-center border border-zinc-800 tabular-nums"
+            style={{
+              color: "var(--accent)",
+              background: "color-mix(in srgb, var(--accent) 8%, transparent)",
+              minWidth: 32,
+            }}
+          >
+            {SPEEDS[speedIdx]}×
+          </div>
+          <button
+            onClick={() => cycleSpeed(1)}
+            className="font-mono text-[10px] w-5 h-6 flex items-center justify-center cursor-pointer text-zinc-500 hover:text-zinc-300 border border-zinc-800 border-l-0 bg-transparent"
+            title="faster"
+          >
+            ›
+          </button>
+        </div>
+
+        {/* volume */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleMute}
+            className="w-5 h-6 flex items-center justify-center cursor-pointer bg-transparent border-none p-0 text-zinc-500 hover:text-zinc-300 transition-colors"
+            style={{ color: muted ? "#52525b" : undefined }}
+            title={muted ? "unmute" : "mute"}
+            aria-label={muted ? "unmute" : "mute"}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              {s}×
-            </button>
-          ))}
+              <path d="M2 6v4h2.5L8 13V3L4.5 6H2Z" fill="currentColor" stroke="none" />
+              {muted ? (
+                <>
+                  <line x1="11" y1="6" x2="14" y2="9" />
+                  <line x1="14" y1="6" x2="11" y2="9" />
+                </>
+              ) : (
+                <>
+                  <path d="M11 5.5a3.5 3.5 0 0 1 0 5" />
+                  {volume > 0.6 && <path d="M13 3.5a6 6 0 0 1 0 9" />}
+                </>
+              )}
+            </svg>
+          </button>
+          <div
+            className="w-[60px] h-1 bg-zinc-800 relative cursor-pointer touch-none select-none"
+            onPointerDown={startVol}
+            onPointerMove={moveVol}
+            onPointerUp={endScrub}
+            onPointerCancel={endScrub}
+            title={`volume ${Math.round(displayVolume * 100)}%`}
+          >
+            <div
+              className="absolute left-0 top-0 bottom-0"
+              style={{ width: `${displayVolume * 100}%`, background: "var(--accent)" }}
+            />
+            <div
+              className="absolute top-1/2 w-2 h-2 rounded-full -translate-y-1/2 -translate-x-1/2"
+              style={{
+                left: `${displayVolume * 100}%`,
+                background: "var(--accent)",
+                display: displayVolume > 0 ? "block" : "none",
+              }}
+            />
+          </div>
         </div>
       </div>
 
@@ -328,7 +483,7 @@ export function EpisodeRow({ episode: ep, streamDelay, isOpen, onToggle }: Episo
                   <p key={i}>
                     {para.split("\n").map((line, j, arr) => (
                       <span key={j}>
-                        {line}
+                        {linkify(line)}
                         {j < arr.length - 1 && <br />}
                       </span>
                     ))}

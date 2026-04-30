@@ -58,6 +58,11 @@ export function EpisodeList({ episodes, skipIntroDelay, onReplay }: EpisodeListP
   const safePage = Math.min(page, Math.max(1, totalPages));
   const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
+  const fakeTokens = useMemo(() => {
+    const base = paged.reduce((acc, ep) => acc + ep.title.length + ep.num.length * 3, 0);
+    return base * 11 + paged.length * 137 + 421;
+  }, [paged]);
+
   // page numbers to show — always show first, last, and ±2 around current
   function pageNumbers(): Array<number | "…"> {
     if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -182,7 +187,7 @@ export function EpisodeList({ episodes, skipIntroDelay, onReplay }: EpisodeListP
       )}
 
       <div className="mt-4 text-xs text-zinc-500 font-mono">
-        streamed {paged.length} rows ·{" "}
+        streamed {paged.length} rows · {fakeTokens.toLocaleString()} tokens ·{" "}
         <button
           onClick={onReplay}
           className="bg-transparent border-0 cursor-pointer p-0 font-mono text-xs"

@@ -81,4 +81,3 @@ export async function getOrSetVoterId(c: Context): Promise<string> {
   });
   return newId;
 }
-
