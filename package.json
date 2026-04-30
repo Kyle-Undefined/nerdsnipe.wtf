@@ -1,13 +1,13 @@
 {
   "name": "nerdsnipe-wtf",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "scripts": {
     "dev": "concurrently \"bun --hot src/server/index.ts\" \"bun build src/client/main.tsx --outdir public --target browser --watch\" \"./node_modules/.bin/tailwindcss -i src/client/styles.css -o public/bundle.css --watch\"",
     "lint": "oxlint src/",
     "format": "oxfmt src/",
     "format:check": "oxfmt --check src/",
-    "build:client": "NODE_ENV=production bun build src/client/main.tsx --outdir public --target browser --minify",
+    "build:client": "bun build src/client/main.tsx --outdir public --target browser --production",
     "build:css": "./node_modules/.bin/tailwindcss -i src/client/styles.css -o public/bundle.css --minify",
     "build": "bun run build:client && bun run build:css",
     "start": "bun src/server/index.ts"
