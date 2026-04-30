@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { getLocalVote, useVoteToggle } from "../hooks/useVotes";
+import { useVoteToggle } from "../hooks/useVotes";
 
 export interface Episode {
   id: string;
@@ -190,7 +190,7 @@ interface EpisodeRowProps {
 export function EpisodeRow({ episode: ep, streamDelay, isOpen, onToggle }: EpisodeRowProps) {
   const [revealed, setRevealed] = useState(streamDelay === 0);
   const { mutate: toggleVote } = useVoteToggle();
-  const voteState = getLocalVote(ep.id, ep.votes, ep.voted ?? false);
+  const voteState = { voted: ep.voted ?? false, count: ep.votes };
 
   useEffect(() => {
     if (streamDelay === 0) {
@@ -265,12 +265,12 @@ export function EpisodeRow({ episode: ep, streamDelay, isOpen, onToggle }: Episo
           tabIndex={0}
           onClick={(e) => {
             e.stopPropagation();
-            toggleVote({ episodeId: ep.id, baseline: ep.votes });
+            toggleVote({ episodeId: ep.id });
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.stopPropagation();
-              toggleVote({ episodeId: ep.id, baseline: ep.votes });
+              toggleVote({ episodeId: ep.id });
             }
           }}
           className="font-mono text-[11px] px-2 py-0.5 w-[52px] flex-shrink-0 text-center transition-all cursor-pointer"

@@ -1,6 +1,10 @@
 // must match server/pow.ts
 const DIFFICULTY_BITS = 14;
 const MAX_ITERATIONS = 10_000_000;
+// yield to the event loop every YIELD_EVERY iterations so the main thread
+// stays responsive while we hash. tuned to keep the longest synchronous run
+// under ~16ms on a typical laptop at DIFFICULTY_BITS=14.
+const YIELD_EVERY = 256;
 
 const encoder = new TextEncoder();
 
@@ -8,6 +12,10 @@ export interface PowProof {
   timestamp: number;
   nonce: string;
   work: string;
+}
+
+function yieldToEventLoop(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 export async function computePow(episodeId: string): Promise<PowProof> {
@@ -21,6 +29,9 @@ export async function computePow(episodeId: string): Promise<PowProof> {
     const hashBuf = await crypto.subtle.digest("SHA-256", encoder.encode(input));
     if (leadingZeroBits(new Uint8Array(hashBuf)) >= DIFFICULTY_BITS) {
       return { timestamp, nonce, work: String(work) };
+    }
+    if ((work & (YIELD_EVERY - 1)) === YIELD_EVERY - 1) {
+      await yieldToEventLoop();
     }
   }
   throw new Error("pow gave up");

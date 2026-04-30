@@ -23,7 +23,11 @@ function fmtDate(iso: string): string {
 export function ChatLayout() {
   const { typing, prompted, assistantStarted, replay } = useIntro();
 
-  const { data: episodes = [], isLoading } = useQuery<Episode[]>({
+  const {
+    data: episodes = [],
+    isLoading,
+    isError,
+  } = useQuery<Episode[]>({
     queryKey: ["episodes"],
     queryFn: async () => {
       const r = await fetch("/api/episodes", { credentials: "same-origin" });
@@ -71,7 +75,7 @@ export function ChatLayout() {
         {RECENT_QUERIES.map((q, i) => (
           <div
             key={q}
-            className="px-2.5 py-1.5 text-xs font-sans whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer transition-colors"
+            className="px-2.5 py-1.5 text-xs font-sans whitespace-nowrap overflow-hidden text-ellipsis transition-colors"
             style={{
               color: i === 0 ? "#e4e4e7" : "#a1a1aa",
               background: i === 0 ? "#18181b" : "transparent",
@@ -195,24 +199,24 @@ export function ChatLayout() {
                     <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 animate-dot-2" />
                     <span className="w-1.5 h-1.5 rounded-full bg-zinc-600 animate-dot-3" />
                   </div>
+                ) : isLoading ? (
+                  <p className="text-sm text-zinc-400">Fetching episodes…</p>
+                ) : isError ? (
+                  <p className="text-sm text-red-400">
+                    Failed to load episodes. Try refreshing.
+                  </p>
                 ) : (
                   <>
-                    {isLoading ? (
-                      <p className="text-sm text-zinc-400">Fetching episodes…</p>
-                    ) : (
-                      <>
-                        <p className="text-sm leading-relaxed text-zinc-300 mb-3.5">
-                          Here are all <strong>{episodes.length}</strong> episodes, newest first.
-                          Click a row to expand, or hit{" "}
-                          <strong style={{ color: "var(--accent)" }}>wtf?</strong> if it sniped you.
-                        </p>
-                        <EpisodeList
-                          episodes={episodes}
-                          skipIntroDelay={skipDelay}
-                          onReplay={replay}
-                        />
-                      </>
-                    )}
+                    <p className="text-sm leading-relaxed text-zinc-300 mb-3.5">
+                      Here are all <strong>{episodes.length}</strong> episodes, newest first.
+                      Click a row to expand, or hit{" "}
+                      <strong style={{ color: "var(--accent)" }}>wtf?</strong> if it sniped you.
+                    </p>
+                    <EpisodeList
+                      episodes={episodes}
+                      skipIntroDelay={skipDelay}
+                      onReplay={replay}
+                    />
                   </>
                 )}
               </div>

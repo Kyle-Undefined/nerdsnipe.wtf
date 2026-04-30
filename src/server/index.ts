@@ -6,7 +6,30 @@ import { syncRss } from "./rss";
 
 const app = new Hono();
 
-app.use("*", secureHeaders());
+app.use(
+  "*",
+  secureHeaders({
+    contentSecurityPolicy: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      mediaSrc: ["'self'", "https:"],
+      connectSrc: ["'self'"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      objectSrc: ["'none'"],
+    },
+    strictTransportSecurity: "max-age=31536000; includeSubDomains",
+  }),
+);
+
+app.onError((err, c) => {
+  console.error("[server] unhandled error:", err);
+  return c.json({ error: "server error" }, 500);
+});
 
 // static assets (built client bundle, images)
 app.use("/public/*", serveStatic({ root: "./" }));
@@ -21,7 +44,7 @@ app.get("*", async (c, next) => {
   return spaShell(c, next);
 });
 
-const port = Number(process.env.PORT ?? 3000);
+const port = Number(process.env.PORT ?? 42069);
 
 // kick off background tasks — don't await, server starts immediately.
 // register the interval before the initial run so a startup failure doesn't
@@ -39,5 +62,3 @@ export default {
   port,
   fetch: app.fetch,
 };
-
-console.log(`[server] running on http://localhost:${port}`);

@@ -8,6 +8,12 @@ const YT_UPLOADS_PLAYLIST_ID = "UU" + YT_CHANNEL_ID.slice(2);
 const YT_RSS_URL = `https://www.youtube.com/feeds/videos.xml?channel_id=${YT_CHANNEL_ID}`;
 const YT_API_BASE = "https://www.googleapis.com/youtube/v3/playlistItems";
 
+// manual ytUrl overrides for episodes not on the main channel (e.g. ep 001
+// lived on a host's main channel). keyed by episode guid (RSS id).
+const YT_URL_OVERRIDES: Record<string, string> = {
+  "c3c0ce4f-9e9e-4217-917e-615cf020ca59": "https://www.youtube.com/watch?v=3DNkDIVKtK8",
+};
+
 function normalizeTitle(s: string): string {
   return s
     .toLowerCase()
@@ -230,6 +236,12 @@ async function fetchYouTubeVideos(apiKey: string | undefined): Promise<YTVideo[]
 
 // match YouTube videos to episodes by title similarity
 export async function enrichWithYouTube(episodes: Episode[]): Promise<Episode[]> {
+  // apply manual overrides first — they win over any future YT match
+  episodes = episodes.map((ep) => {
+    const override = YT_URL_OVERRIDES[ep.id];
+    return override ? { ...ep, ytUrl: override } : ep;
+  });
+
   // skip the YT fetch entirely if every episode already has a ytUrl
   if (episodes.every((e) => e.ytUrl)) return episodes;
 

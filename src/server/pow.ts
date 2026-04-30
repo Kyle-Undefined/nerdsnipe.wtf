@@ -9,11 +9,14 @@ export interface PowResult {
 }
 
 export function verifyPow(
-  episodeId: string,
+  episodeId: unknown,
   timestamp: unknown,
   nonce: unknown,
   work: unknown,
 ): PowResult {
+  if (typeof episodeId !== "string" || episodeId.length === 0 || episodeId.length > 128) {
+    return { ok: false, reason: "invalid episodeId" };
+  }
   if (typeof timestamp !== "number" || !Number.isFinite(timestamp)) {
     return { ok: false, reason: "invalid timestamp" };
   }

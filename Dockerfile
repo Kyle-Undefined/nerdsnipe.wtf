@@ -11,16 +11,17 @@ FROM oven/bun:1-slim
 
 WORKDIR /app
 
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production
+
 COPY --from=builder /app/src/server ./src/server
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/index.html .
-COPY --from=builder /app/package.json .
-COPY --from=builder /app/node_modules ./node_modules
 
 # episode cache and SQLite live in a volume so they survive container updates
 VOLUME ["/app/data"]
 
-EXPOSE 3000
+EXPOSE 42069
 
 ENV NODE_ENV=production
 

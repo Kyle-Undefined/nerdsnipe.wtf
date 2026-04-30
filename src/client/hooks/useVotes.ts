@@ -1,18 +1,30 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { computePow } from "../lib/pow";
+import type { Episode } from "../components/EpisodeRow";
 
-// optimistic vote state lives here so the star updates instantly, even before the server responds
-const localVotes = new Map<string, { count: number; voted: boolean }>();
+const EPISODES_KEY = ["episodes"] as const;
 
-export function getLocalVote(episodeId: string, baseline: number, votedBaseline = false) {
-  return localVotes.get(episodeId) ?? { count: baseline, voted: votedBaseline };
+interface VoteResponse {
+  voted: boolean;
+  count: number;
+}
+
+function patchEpisode(
+  episodes: Episode[] | undefined,
+  episodeId: string,
+  patch: { voted: boolean; count: number },
+): Episode[] | undefined {
+  if (!episodes) return episodes;
+  return episodes.map((ep) =>
+    ep.id === episodeId ? { ...ep, voted: patch.voted, votes: patch.count } : ep,
+  );
 }
 
 export function useVoteToggle() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ episodeId }: { episodeId: string; baseline: number }) => {
+    mutationFn: async ({ episodeId }: { episodeId: string }) => {
       const proof = await computePow(episodeId);
 
       const res = await fetch(`/api/votes/${episodeId}`, {
@@ -23,31 +35,39 @@ export function useVoteToggle() {
       });
 
       if (!res.ok) throw new Error("vote failed");
-      return (await res.json()) as { voted: boolean; count: number };
+      return (await res.json()) as VoteResponse;
     },
 
-    onMutate: ({ episodeId, baseline }) => {
-      // optimistic update — flip immediately, revert if the server errors
-      const current = getLocalVote(episodeId, baseline);
-      const next = {
-        voted: !current.voted,
-        count: current.count + (current.voted ? -1 : 1),
-      };
-      localVotes.set(episodeId, next);
-      queryClient.invalidateQueries({ queryKey: ["episodes"] });
-      return { previous: current };
+    onMutate: async ({ episodeId }) => {
+      await queryClient.cancelQueries({ queryKey: EPISODES_KEY });
+      const previous = queryClient.getQueryData<Episode[]>(EPISODES_KEY);
+      const target = previous?.find((e) => e.id === episodeId);
+      if (target) {
+        const wasVoted = target.voted ?? false;
+        queryClient.setQueryData<Episode[]>(EPISODES_KEY, (old) =>
+          patchEpisode(old, episodeId, {
+            voted: !wasVoted,
+            count: target.votes + (wasVoted ? -1 : 1),
+          }),
+        );
+      }
+      return { previous };
     },
 
     onSuccess: (data, { episodeId }) => {
-      localVotes.set(episodeId, data);
-      queryClient.invalidateQueries({ queryKey: ["episodes"] });
+      queryClient.setQueryData<Episode[]>(EPISODES_KEY, (old) =>
+        patchEpisode(old, episodeId, data),
+      );
     },
 
-    onError: (_err, { episodeId }, context) => {
+    onError: (_err, _vars, context) => {
       if (context?.previous) {
-        localVotes.set(episodeId, context.previous);
+        queryClient.setQueryData(EPISODES_KEY, context.previous);
       }
-      queryClient.invalidateQueries({ queryKey: ["episodes"] });
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: EPISODES_KEY });
     },
   });
 }
