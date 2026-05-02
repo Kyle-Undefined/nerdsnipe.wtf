@@ -68,6 +68,10 @@
   background: color-mix(in srgb, var(--accent) 15%, transparent) !important;
 }
 
+body.drawer-open {
+  overflow: hidden;
+}
+
 /* scrollbar styling — the default webkit scrollbar looks rough in dark mode */
 ::-webkit-scrollbar {
   width: 6px;

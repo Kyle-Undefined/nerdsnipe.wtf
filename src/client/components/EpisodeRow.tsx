@@ -61,11 +61,11 @@ const SPEEDS = [1, 1.25, 1.5, 1.75, 2] as const;
 function AudioPlayer({ audioUrl }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
-  const [progress, setProgress] = useState(0); // 0–1
+  const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState("0:00:00");
   const [duration, setDuration] = useState("0:00:00");
   const [speedIdx, setSpeedIdx] = useState(0);
-  const [volume, setVolume] = useState(1); // 0–1
+  const [volume, setVolume] = useState(1);
   const [muted, setMuted] = useState(false);
 
   function fmtTime(secs: number): string {
@@ -78,7 +78,6 @@ function AudioPlayer({ audioUrl }: AudioPlayerProps) {
   function togglePlay() {
     const a = audioRef.current;
     if (!a) return;
-    // state is driven by onPlay/onPause events — don't set it here
     if (a.paused) {
       a.play().catch(() => {});
     } else {
@@ -158,6 +157,52 @@ function AudioPlayer({ audioUrl }: AudioPlayerProps) {
 
   const displayVolume = muted ? 0 : volume;
 
+  const scrubberTrack = (
+    <div className="w-full h-1 bg-zinc-800 relative pointer-events-none">
+      <div
+        className="absolute left-0 top-0 bottom-0"
+        style={{ width: `${progress * 100}%`, background: "var(--accent)" }}
+      />
+      <div
+        className="absolute top-1/2 w-2.5 h-2.5 rounded-full -translate-y-1/2 -translate-x-1/2"
+        style={{
+          left: `${progress * 100}%`,
+          background: "var(--accent)",
+          display: progress > 0 ? "block" : "none",
+        }}
+      />
+    </div>
+  );
+
+  const speedControl = (
+    <div className="flex items-center flex-shrink-0">
+      <button
+        onClick={() => cycleSpeed(-1)}
+        className="font-mono text-[10px] w-8 sm:w-5 h-9 sm:h-6 flex items-center justify-center cursor-pointer text-zinc-500 hover:text-zinc-300 border border-zinc-800 border-r-0 bg-transparent"
+        title="slower"
+      >
+        ‹
+      </button>
+      <div
+        className="font-mono text-[9px] h-9 sm:h-6 px-1.5 flex items-center justify-center border border-zinc-800 tabular-nums"
+        style={{
+          color: "var(--accent)",
+          background: "color-mix(in srgb, var(--accent) 8%, transparent)",
+          minWidth: 32,
+        }}
+      >
+        {SPEEDS[speedIdx]}×
+      </div>
+      <button
+        onClick={() => cycleSpeed(1)}
+        className="font-mono text-[10px] w-8 sm:w-5 h-9 sm:h-6 flex items-center justify-center cursor-pointer text-zinc-500 hover:text-zinc-300 border border-zinc-800 border-l-0 bg-transparent"
+        title="faster"
+      >
+        ›
+      </button>
+    </div>
+  );
+
   return (
     <div
       className="mt-3.5 p-3"
@@ -181,7 +226,55 @@ function AudioPlayer({ audioUrl }: AudioPlayerProps) {
         onLoadedMetadata={(e) => setDuration(fmtTime(e.currentTarget.duration))}
       />
 
-      <div className="flex items-center gap-3">
+      {/* Mobile layout: transport row, full-width scrubber, then times flanking speed */}
+      <div className="sm:hidden flex flex-col gap-2">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => skip(-15)}
+            className="w-9 h-9 flex items-center justify-center font-mono text-[10px] text-zinc-400 border border-zinc-800 cursor-pointer bg-transparent hover:border-zinc-600 flex-shrink-0"
+            title="back 15s"
+          >
+            −15
+          </button>
+
+          <button
+            onClick={togglePlay}
+            className="w-10 h-10 flex items-center justify-center text-[15px] font-bold cursor-pointer rounded-full transition-[filter] hover:brightness-110 flex-shrink-0"
+            style={{ background: "var(--accent)", color: "#0a0a0b", paddingLeft: playing ? 0 : 2 }}
+          >
+            {playing ? "❚❚" : "▶"}
+          </button>
+
+          <button
+            onClick={() => skip(30)}
+            className="w-9 h-9 flex items-center justify-center font-mono text-[10px] text-zinc-400 border border-zinc-800 cursor-pointer bg-transparent hover:border-zinc-600 flex-shrink-0"
+            title="forward 30s"
+          >
+            +30
+          </button>
+        </div>
+
+        {/* Full-width scrubber on mobile */}
+        <div
+          className="h-6 flex items-center cursor-pointer touch-none select-none"
+          onPointerDown={startScrub}
+          onPointerMove={moveScrub}
+          onPointerUp={endScrub}
+          onPointerCancel={endScrub}
+        >
+          {scrubberTrack}
+        </div>
+
+        {/* Time display flanking speed control — no overflow risk */}
+        <div className="flex items-center justify-between font-mono text-[10px] text-zinc-500">
+          <span>{currentTime}</span>
+          {speedControl}
+          <span>{duration}</span>
+        </div>
+      </div>
+
+      {/* Desktop layout: single row */}
+      <div className="hidden sm:flex items-center gap-3">
         <button
           onClick={() => skip(-15)}
           className="w-7 h-7 flex items-center justify-center font-mono text-[10px] text-zinc-400 border border-zinc-800 cursor-pointer bg-transparent hover:border-zinc-600"
@@ -206,7 +299,7 @@ function AudioPlayer({ audioUrl }: AudioPlayerProps) {
           +30
         </button>
 
-        {/* progress bar */}
+        {/* Progress bar */}
         <div className="flex-1 flex flex-col gap-1.5">
           <div
             className="h-1 bg-zinc-800 relative cursor-pointer touch-none select-none"
@@ -234,35 +327,9 @@ function AudioPlayer({ audioUrl }: AudioPlayerProps) {
           </div>
         </div>
 
-        {/* speed cycle */}
-        <div className="flex items-center">
-          <button
-            onClick={() => cycleSpeed(-1)}
-            className="font-mono text-[10px] w-5 h-6 flex items-center justify-center cursor-pointer text-zinc-500 hover:text-zinc-300 border border-zinc-800 border-r-0 bg-transparent"
-            title="slower"
-          >
-            ‹
-          </button>
-          <div
-            className="font-mono text-[9px] h-6 px-1.5 flex items-center justify-center border border-zinc-800 tabular-nums"
-            style={{
-              color: "var(--accent)",
-              background: "color-mix(in srgb, var(--accent) 8%, transparent)",
-              minWidth: 32,
-            }}
-          >
-            {SPEEDS[speedIdx]}×
-          </div>
-          <button
-            onClick={() => cycleSpeed(1)}
-            className="font-mono text-[10px] w-5 h-6 flex items-center justify-center cursor-pointer text-zinc-500 hover:text-zinc-300 border border-zinc-800 border-l-0 bg-transparent"
-            title="faster"
-          >
-            ›
-          </button>
-        </div>
+        {speedControl}
 
-        {/* volume */}
+        {/* Volume — desktop only */}
         <div className="flex items-center gap-2">
           <button
             onClick={toggleMute}
@@ -362,6 +429,33 @@ export function EpisodeRow({ episode: ep, streamDelay, isOpen, onToggle }: Episo
     ep.appleUrl && { label: "apple", href: ep.appleUrl },
   ].filter(Boolean) as Array<{ label: string; href: string }>;
 
+  const voteBadge = (
+    <span
+      role="button"
+      tabIndex={0}
+      onClick={(e) => {
+        e.stopPropagation();
+        toggleVote({ episodeId: ep.id });
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.stopPropagation();
+          toggleVote({ episodeId: ep.id });
+        }
+      }}
+      className="font-mono text-[11px] px-2 py-0.5 w-[52px] flex-shrink-0 text-center transition-all cursor-pointer"
+      style={{
+        color: voteState.voted ? "var(--accent)" : "#71717a",
+        border: `1px solid ${voteState.voted ? "var(--accent)" : "#27272a"}`,
+        background: voteState.voted
+          ? "color-mix(in srgb, var(--accent) 8%, transparent)"
+          : "transparent",
+      }}
+    >
+      {voteState.voted ? "wtf!" : "wtf?"} {voteState.count}
+    </span>
+  );
+
   return (
     <div
       style={{
@@ -374,23 +468,18 @@ export function EpisodeRow({ episode: ep, streamDelay, isOpen, onToggle }: Episo
       {/* collapsed row */}
       <button
         onClick={onToggle}
-        className="bg-transparent hover:bg-zinc-900/30 transition-colors"
+        className="w-full flex items-start sm:items-center gap-2 sm:gap-3 bg-transparent hover:bg-zinc-900/30 transition-colors cursor-pointer text-left"
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
           padding: "10px",
-          width: "100%",
-          cursor: "pointer",
           boxSizing: "border-box",
           border: "none",
           font: "inherit",
           color: "inherit",
-          textAlign: "left",
         }}
       >
+        {/* chevron */}
         <span
-          className="font-mono text-[11px] text-zinc-500 w-3 flex-shrink-0"
+          className="font-mono text-[11px] text-zinc-500 w-3 flex-shrink-0 mt-[3px] sm:mt-0"
           style={{
             transform: isOpen ? "rotate(90deg)" : "rotate(0deg)",
             transition: "transform .15s",
@@ -400,53 +489,47 @@ export function EpisodeRow({ episode: ep, streamDelay, isOpen, onToggle }: Episo
           ▸
         </span>
 
-        <span className="font-mono text-[11px] text-zinc-400 w-[92px] flex-shrink-0">
+        {/* date — desktop only */}
+        <span className="hidden sm:inline font-mono text-[11px] text-zinc-400 w-[92px] flex-shrink-0">
           {fmtDate(ep.date)}
         </span>
 
-        <span className="font-mono text-[11px] text-zinc-500 w-10 flex-shrink-0">ep_{ep.num}</span>
-
-        <span className="flex-1 text-sm text-zinc-200 font-medium overflow-hidden text-ellipsis whitespace-nowrap">
-          {ep.title}
+        {/* ep# — desktop only */}
+        <span className="hidden sm:inline font-mono text-[11px] text-zinc-500 w-10 flex-shrink-0">
+          ep_{ep.num}
         </span>
 
-        <span className="font-mono text-[11px] text-zinc-400 w-16 flex-shrink-0 text-right">
-          {ep.duration}
-        </span>
+        {/* center content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="flex-1 text-sm text-zinc-200 font-medium overflow-hidden text-ellipsis whitespace-nowrap">
+              {ep.title}
+            </span>
 
-        {/* vote badge */}
-        <span
-          role="button"
-          tabIndex={0}
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleVote({ episodeId: ep.id });
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.stopPropagation();
-              toggleVote({ episodeId: ep.id });
-            }
-          }}
-          className="font-mono text-[11px] px-2 py-0.5 w-[52px] flex-shrink-0 text-center transition-all cursor-pointer"
-          style={{
-            color: voteState.voted ? "var(--accent)" : "#71717a",
-            border: `1px solid ${voteState.voted ? "var(--accent)" : "#27272a"}`,
-            background: voteState.voted
-              ? "color-mix(in srgb, var(--accent) 8%, transparent)"
-              : "transparent",
-          }}
-        >
-          {voteState.voted ? "wtf!" : "wtf?"} {voteState.count}
-        </span>
+            {/* duration — desktop only, in title row */}
+            <span className="hidden sm:inline font-mono text-[11px] text-zinc-400 w-16 flex-shrink-0 text-right">
+              {ep.duration}
+            </span>
+
+            {voteBadge}
+          </div>
+
+          {/* mobile meta line */}
+          <div className="sm:hidden mt-1 font-mono text-[10px] text-zinc-500 leading-none">
+            {fmtDate(ep.date)} · ep_{ep.num} · {ep.duration}
+          </div>
+        </div>
       </button>
 
       {/* expanded panel */}
       {isOpen && (
-        <div className="px-9 pb-5 pt-1 flex gap-4" style={{ background: "#0b0b0d" }}>
+        <div
+          className="px-4 sm:px-9 pb-5 pt-1 flex flex-col sm:flex-row gap-4"
+          style={{ background: "#0b0b0d" }}
+        >
           {/* episode art */}
           <div
-            className="w-[180px] h-[180px] flex-shrink-0 overflow-hidden border border-zinc-800"
+            className="w-full max-w-[200px] sm:max-w-none sm:w-[180px] sm:h-[180px] mx-auto sm:mx-0 aspect-square sm:aspect-auto flex-shrink-0 overflow-hidden border border-zinc-800"
             style={{ background: "#050507" }}
           >
             {ep.imageUrl ? (

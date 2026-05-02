@@ -108,7 +108,7 @@ export function EpisodeList({ episodes, skipIntroDelay, onReplay }: EpisodeListP
             setQuery(e.target.value);
             setPage(1);
           }}
-          className="ml-auto font-mono text-[11px] bg-[#0f0f11] border border-zinc-800 text-zinc-200 px-2.5 py-0.5 outline-none w-44 placeholder-zinc-600"
+          className="ml-auto font-mono text-[11px] bg-[#0f0f11] border border-zinc-800 text-zinc-200 px-2.5 py-0.5 outline-none w-full sm:w-44 mt-1.5 sm:mt-0 placeholder-zinc-600"
         />
       </div>
 
@@ -133,7 +133,7 @@ export function EpisodeList({ episodes, skipIntroDelay, onReplay }: EpisodeListP
 
       {/* pagination — only show when we actually have multiple pages */}
       {totalPages > 1 && (
-        <div className="mt-5 flex items-center gap-2 font-mono text-[11px]">
+        <div className="mt-5 flex items-center gap-2 font-mono text-[11px] flex-wrap">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={safePage === 1}
