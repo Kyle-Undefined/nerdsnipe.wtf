@@ -24,6 +24,13 @@ function normalizeTitle(s: string): string {
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
+  // The podcast feed is a trusted source and its episode descriptions contain
+  // many HTML entities (&amp;, &#39;, ...). fast-xml-parser's default
+  // maxTotalExpansions of 1000 (a billion-laughs guard) is cumulative across
+  // the whole document, so once enough episodes accumulated, every parse threw
+  // "Entity expansion limit exceeded" and syncRss silently stopped merging new
+  // episodes. Raise the ceiling well above any realistic feed size.
+  processEntities: { maxTotalExpansions: 1_000_000 },
 });
 
 function parseDuration(raw: string | number | undefined): string {
