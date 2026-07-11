@@ -3,6 +3,18 @@ import { createHash } from "node:crypto";
 const TIMESTAMP_WINDOW_MS = 60_000;
 const DIFFICULTY_BITS = 14;
 
+// proofs already seen, so a valid proof can't be replayed within its timestamp
+// window. keyed by nonce (client-generated, 16 random bytes — collisions across
+// honest clients are effectively impossible). entries expire once the timestamp
+// window has passed, since verifyPow rejects stale timestamps anyway.
+const seenNonces = new Map<string, number>();
+
+function pruneSeenNonces(now: number): void {
+  for (const [nonce, expiresAt] of seenNonces) {
+    if (expiresAt <= now) seenNonces.delete(nonce);
+  }
+}
+
 export interface PowResult {
   ok: boolean;
   reason?: string;
@@ -35,6 +47,14 @@ export function verifyPow(
   if (leadingZeroBits(hash) < DIFFICULTY_BITS) {
     return { ok: false, reason: "insufficient work" };
   }
+
+  const now = Date.now();
+  pruneSeenNonces(now);
+  if (seenNonces.has(nonce)) {
+    return { ok: false, reason: "proof already used" };
+  }
+  seenNonces.set(nonce, timestamp + TIMESTAMP_WINDOW_MS);
+
   return { ok: true };
 }
 

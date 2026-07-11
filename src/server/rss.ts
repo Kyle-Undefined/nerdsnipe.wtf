@@ -96,12 +96,13 @@ export async function fetchRss(): Promise<Episode[]> {
         .replace(/<\/li>/gi, "\n")
         .replace(/<[^>]+>/g, "")
         .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
-        .replace(/&amp;/g, "&")
         .replace(/&lt;/g, "<")
         .replace(/&gt;/g, ">")
         .replace(/&quot;/g, '"')
         .replace(/&apos;/g, "'")
         .replace(/&nbsp;/g, " ")
+        // &amp; must decode last — otherwise "&amp;lt;" double-decodes to "<"
+        .replace(/&amp;/g, "&")
         .replace(/\n{3,}/g, "\n\n")
         .trim();
 

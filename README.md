@@ -18,7 +18,7 @@ And that's about it, really. Go listen to the [show](https://nerdsnipe.wtf).
 ## Stack
 
 - `Bun` + `Hono`
-- `TanStack Query & Table`
+- `TanStack Query`
 - `bun:sqlite`
 
 ## Running it
