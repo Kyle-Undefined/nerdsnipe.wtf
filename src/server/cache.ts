@@ -16,6 +16,7 @@ export interface Episode {
   audioUrl: string;
   imageUrl?: string;
   ytUrl?: string;
+  spotifyUrl?: string;
   appleUrl?: string;
 }
 
@@ -55,11 +56,12 @@ export async function mergeEpisodes(incoming: Episode[]): Promise<Episode[]> {
 
     for (const ep of incoming) {
       const prev = byId.get(ep.id);
-      // preserve ytUrl and appleUrl that came from other sources
+      // Preserve enriched/deep links when an upstream source omits them.
       byId.set(ep.id, {
         ...ep,
         imageUrl: ep.imageUrl ?? prev?.imageUrl,
         ytUrl: ep.ytUrl ?? prev?.ytUrl,
+        spotifyUrl: ep.spotifyUrl ?? prev?.spotifyUrl,
         appleUrl: ep.appleUrl ?? prev?.appleUrl,
       });
     }

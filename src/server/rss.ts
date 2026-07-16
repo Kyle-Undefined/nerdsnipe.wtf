@@ -78,6 +78,11 @@ export async function fetchRss(): Promise<Episode[]> {
       const enclosure = i.enclosure as Record<string, string> | undefined;
       const rawAudio = enclosure?.["@_url"] ?? "";
       const audioUrl = isHttpUrl(rawAudio) ? rawAudio : "";
+      const rawSpotifyUrl =
+        typeof i.link === "object" && i.link !== null
+          ? String((i.link as Record<string, unknown>)["#text"] ?? "")
+          : String(i.link ?? "");
+      const spotifyUrl = isHttpUrl(rawSpotifyUrl) ? rawSpotifyUrl : undefined;
 
       // pubDate from RSS is like "Tue, 22 Apr 2026 12:00:00 +0000"
       const pubDate = i.pubDate ? new Date(String(i.pubDate)) : null;
@@ -119,6 +124,7 @@ export async function fetchRss(): Promise<Episode[]> {
         description: desc.slice(0, 1200),
         audioUrl,
         imageUrl,
+        spotifyUrl,
       };
     })
     .filter((e): e is Episode => e !== null && e.title !== "");

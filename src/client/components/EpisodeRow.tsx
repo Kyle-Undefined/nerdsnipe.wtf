@@ -11,6 +11,7 @@ export interface Episode {
   audioUrl: string;
   imageUrl?: string;
   ytUrl?: string;
+  spotifyUrl?: string;
   appleUrl?: string;
   votes: number;
   voted?: boolean;
@@ -425,7 +426,7 @@ export function EpisodeRow({ episode: ep, streamDelay, isOpen, onToggle }: Episo
 
   const podLinks = [
     ep.ytUrl && { label: "youtube", href: ep.ytUrl },
-    { label: "spotify", href: "https://creators.spotify.com/pod/profile/nerd-sniped/" },
+    ep.spotifyUrl && { label: "spotify", href: ep.spotifyUrl },
     ep.appleUrl && { label: "apple", href: ep.appleUrl },
   ].filter(Boolean) as Array<{ label: string; href: string }>;
 

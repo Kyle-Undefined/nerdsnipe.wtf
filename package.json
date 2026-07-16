@@ -1,6 +1,6 @@
 {
   "name": "nerdsnipe-wtf",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "private": true,
   "scripts": {
     "dev": "concurrently \"bun --hot src/server/index.ts\" \"bun build src/client/main.tsx --outdir public --target browser --watch\" \"./node_modules/.bin/tailwindcss -i src/client/styles.css -o public/bundle.css --watch\"",
@@ -13,20 +13,20 @@
     "start": "bun src/server/index.ts"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5",
-    "fast-xml-parser": "^4",
-    "hono": "^4",
-    "react": "^18",
-    "react-dom": "^18"
+    "@tanstack/react-query": "5.101.2",
+    "fast-xml-parser": "5.10.0",
+    "hono": "4.12.30",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
   },
   "devDependencies": {
-    "@tailwindcss/cli": "^4.2.4",
-    "@types/bun": "latest",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "concurrently": "^9",
-    "oxfmt": "^0.46.0",
-    "oxlint": "^1.61.0",
-    "tailwindcss": "^4"
+    "@tailwindcss/cli": "4.3.2",
+    "@types/bun": "1.3.14",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "concurrently": "10.0.3",
+    "oxfmt": "0.58.0",
+    "oxlint": "1.73.0",
+    "tailwindcss": "4.3.2"
   }
 }
